@@ -1,5 +1,16 @@
 <?php
 
+function buildCheckboxHtml(string $name, string $label, bool $isChecked): string {
+    $checkedAttribute = $isChecked ? 'checked' : '';
+    // Structure HTML valide pour les checkboxes
+    return "
+        <label class='checkbox-line'>
+            <input type='checkbox' name='$name' $checkedAttribute>
+            $label
+        </label>
+    ";
+}
+
 //generer options de taille
 function generateSelectOptions($selected = 10): string {
     $html = "";
@@ -7,7 +18,7 @@ function generateSelectOptions($selected = 10): string {
     $currentSelection = $_POST["size"] ?? $selected;
     foreach ($options as $value) {
         $attribute = "";
-        if ((int) $value == (int) $selected) {
+        if ((int) $value == (int) $currentSelection) {
             $attribute = "selected";
         }
         $html .= "<option $attribute value=\"$value\">$value</option>";
@@ -50,7 +61,7 @@ function generatePassword(
         $allCharacters .= "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     }
     if ($includeMaj) {
-        $allCharacters .= "abcdefghijkl";
+        $allCharacters .= "abcdefghijklmnopqrstuvwxyz";
     }
     if ($includeNumbers) {
         $allCharacters .= "0123456789";
@@ -61,33 +72,28 @@ function generatePassword(
 
 
     $password = '';
-    $charLenght = strlen($allCharacters);
+    $charLength = strlen($allCharacters);
 
     for ($i = 0; $i < $size; $i++) {
-        $randomIndex = rand(0, $charLenght - 1);
+        $randomIndex = rand(0, $charLength - 1);
         $password .= $allCharacters[$randomIndex];
     }
     return $password;
 }
 
-$sequence = [];
-if ($isMajChecked) {
-    $sequence[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-}
-if ($isMinChecked) {
-    $sequence[] = "abcdefghijklmnopqrstuvwxyz";
-}
-if ($isNumberChecked) {
-    $sequence[] = "0123456789";
-}
-if ($isSymbolChecked) {
-    $sequence[] = "!@#$%^&*()_+=-{}[]:;<>?,./";
-}
-
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    $generated =
+    $generated = generatePassword($size, $isMinChecked, $isMajChecked, $isNumberChecked, $isSymbolChecked);
+} else {
+    $generated = generatePassword($size, $isMinChecked, $isMajChecked, $isNumberChecked, $isSymbolChecked);
 }
+
+$selectedOption = generateSelectOptions($size);
+
+$checkboxMin = buildCheckboxHtml("useMin", "Include Uppercase Letters", $isMinChecked);
+$checkboxMaj = buildCheckboxHtml("useMaj", "Include Lowercase Letters", $isMajChecked);
+$checkboxNum = buildCheckboxHtml("useNum", "Include Numbers", $isNumberChecked);
+$checkboxSym = buildCheckboxHtml("useSym", "Include Symbols", $isSymbolChecked);
 
 //doc html
 $html = <<< HTML
@@ -107,19 +113,14 @@ $html = <<< HTML
     <div>$generated</div>
         
     <form method = "post" action = "index.php">
-        <input type = "checkbox" name = "useMin">Include Uppercase Letters</input>
-        <br>
-        <input type = "checkbox" name = "useMaj">Include Lowercase Letters</input>
-        <br>
-        <input type = "checkbox" name = "useNum">Include Numbers</input>
-        <br>
-        <input type = "checkbox" name = "useSym">Include Symbols</input>
-        <br>
+        {$checkboxMin}
+        {$checkboxMaj}
+        {$checkboxNum}
+        {$checkboxSym}
         <div>
             <label for = "size" class = "formLabel">Size</label>
             <select class = "sizeSelect" name = "size">
             $selectedOption
-            <br>
             </select>
         </div>
         <button type = "submit" class = "bg-blue-500">Generate Password</button>
