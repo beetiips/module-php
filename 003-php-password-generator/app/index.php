@@ -4,6 +4,7 @@
 function generateSelectOptions($selected = 10): string {
     $html = "";
     $options = range(8, 42);
+    $currentSelection = $_POST["size"] ?? $selected;
     foreach ($options as $value) {
         $attribute = "";
         if ((int) $value == (int) $selected) {
@@ -13,20 +14,27 @@ function generateSelectOptions($selected = 10): string {
     }
     return $html;
 }
-$selectedOption = generateSelectOptions();
 
 
 //params
 $generated = " ";
 $size = $_POST["size"] ?? 10;
-$includeMin = $_POST["useMin"] ?? 0;
-$includeMaj = $_POST["useMaj"] ?? 0;
-$includeNumbers = $_POST["useNum"] ?? 0;
-$includeSymbols = $_POST["useSym"] ?? 0;
-$isMinChecked = $includeMin ?? 1 == "checked";
-$isMajChecked = $includeMaj ?? 1 == "checked";
-$isNumberChecked = $includeNumbers ?? 1 == "checked";
-$isSymbolChecked = $includeSymbols ?? 1 == "checked";
+$includeMin = isset($_POST["useMin"]);
+$includeMaj = isset($_POST["useMaj"]);
+$includeNumbers = isset($_POST["useNum"]);
+$includeSymbols = isset($_POST["useSym"]);
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $isMinChecked = true;
+    $isMajChecked = true;
+    $isNumberChecked = true;
+    $isSymbolChecked = true;
+} else {
+    $isMinChecked = $includeMin;
+    $isMajChecked = $includeMaj;
+    $isNumberChecked = $includeNumbers;
+    $isSymbolChecked = $includeSymbols;
+}
 
 //generate Password
 function generatePassword(
@@ -36,44 +44,50 @@ function generatePassword(
     bool $includeNumbers,
     bool $includeSymbols,
 ): string {
+    $allCharacters = '';
 
+    if ($includeMin) {
+        $allCharacters .= "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    }
+    if ($includeMaj) {
+        $allCharacters .= "abcdefghijkl";
+    }
+    if ($includeNumbers) {
+        $allCharacters .= "0123456789";
+    }
+    if ($includeSymbols) {
+        $allCharacters .= "!@#$%^&*";
+    }
+
+
+    $password = '';
+    $charLenght = strlen($allCharacters);
+
+    for ($i = 0; $i < $size; $i++) {
+        $randomIndex = rand(0, $charLenght - 1);
+        $password .= $allCharacters[$randomIndex];
+    }
+    return $password;
 }
 
 $sequence = [];
-    if ($isMajChecked == 1) {
-        $sequence[] = ;
-    }
-    if ($isMinChecked == 1) {
-        $sequence[] = ;
-    }
-    if ($isNumberChecked == 1) {
-        $sequence[] = ;
-    }
-    if ($isSymbolChecked == 1) {
-        $sequence[] = ;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $generated = generatePassword($size, $includeMin, $includeMaj, $includeNumbers, $includeSymbols);
-} else {
-    $includeMin = 1;
-    $includeMaj = 1;
-    $includeNumbers = 1;
-    $includeSymbols = 1;
+if ($isMajChecked) {
+    $sequence[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+}
+if ($isMinChecked) {
+    $sequence[] = "abcdefghijklmnopqrstuvwxyz";
+}
+if ($isNumberChecked) {
+    $sequence[] = "0123456789";
+}
+if ($isSymbolChecked) {
+    $sequence[] = "!@#$%^&*()_+=-{}[]:;<>?,./";
 }
 
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $generated =
+}
 
 //doc html
 $html = <<< HTML
@@ -83,9 +97,11 @@ $html = <<< HTML
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Password Generator</title>
+    <link rel="stylesheet" href="style.css"> 
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  </head>
+</head>
   <body>
+  <div class="container">
     <h1>Password Generator</h1>
     <h2>Mot de passe généré:</h2>
     <div>$generated</div>
@@ -108,6 +124,7 @@ $html = <<< HTML
         </div>
         <button type = "submit" class = "bg-blue-500">Generate Password</button>
     </form>
+    </div>
   </body>
 </html>
 HTML;
